@@ -1,0 +1,46 @@
+def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
+    """
+    builds the buf image using `buf build` and includes google protos.
+    if json is true we generate a .json output instead of a .bin
+    """
+    ext = 'json' if json else 'bin'
+    bufYaml = genrule(
+        name = f'{name}#buf_build',
+        tools = {
+            "buf": "//third_party/buf:buf",
+        },
+        outs = [
+            "buf.yaml",
+        ],
+        cmd = "$TOOLS_BUF mod init",
+    )
+    return genrule(
+        name = name,
+        srcs = srcs + [
+            bufYaml,
+            "//third_party/go/github.com/tcncloud/protoc-gen-persist:_options",
+        ],
+        cmd = [
+            "mv third_party/proto/googleapis/google google",
+            "mv third_party/go/github.com/tcncloud/protoc-gen-persist/persist persist",
+            f"$TOOLS_BUF build -o {name}_buf_image.{ext}",
+        ],
+        deps = [
+            "//third_party/proto:googleapis",
+            "//third_party/go/github.com/tcncloud/protoc-gen-persist",
+        ] + deps,
+        tools = {
+            "buf": "//third_party/buf:buf",
+        },
+        outs = [
+            f"{name}_buf_image.{ext}",
+        ],
+        labels = [
+            f"link:plz-out/gen",
+            f"link:.",
+        ],
+        visibility = visibility,
+    )
+
+def buf_breaking(name:str, srcs:list, against:list, visbility:list):
+    pass
