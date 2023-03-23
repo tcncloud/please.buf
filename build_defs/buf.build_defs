@@ -66,5 +66,5 @@ def buf_toolchain(name:str, revision:str, visibility:list):
         name = name,
         binary =  True,
         url = f"https://github.com/bufbuild/buf/releases/download/{revision}/buf-{HOSTOS}-{HOSTARCH}",
-        extract = True,
+        extract = False,
     )
