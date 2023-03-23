@@ -47,6 +47,21 @@ def buf_breaking(name:str, srcs:list, against:list, visbility:list):
 
 
 def buf_toolchain(name:str, revision:str, visibility:list):
+    if CONFIG.HOSTOS == "darwin":
+        CONFIG.HOSTOS = "Darwin"
+    elif CONFIG.HOSTOS == "linux":
+        CONFIG.HOSTOS = "Linux"
+    elif CONFIG.HOSTOS == "windows":
+        CONFIG.HOSTOS = "Windows"
+    else:
+        fail(f"unsupported host os: {CONFIG.HOSTOS}")
+
+
+    if CONFIG.HOSTARCH == "amd64":
+        CONFIG.HOSTARCH = "x86_64"
+    else:
+        fail(f"unsupported host arch: {CONFIG.HOSTARCH}")
+        
     return remote_file(
         name = name,
         binary =  True,
