@@ -48,23 +48,23 @@ def buf_breaking(name:str, srcs:list, against:list, visbility:list):
 
 def buf_toolchain(name:str, revision:str, visibility:list):
     if CONFIG.HOSTOS == "darwin":
-        CONFIG.HOSTOS = "Darwin"
+        HOSTOS = "Darwin"
     elif CONFIG.HOSTOS == "linux":
-        CONFIG.HOSTOS = "Linux"
+        HOSTOS = "Linux"
     elif CONFIG.HOSTOS == "windows":
-        CONFIG.HOSTOS = "Windows"
+        HOSTOS = "Windows"
     else:
-        fail(f"unsupported host os: {CONFIG.HOSTOS}")
+        HOSTOS = CONFIG.HOSTOS
 
 
     if CONFIG.HOSTARCH == "amd64":
-        CONFIG.HOSTARCH = "x86_64"
+        HOSTARCH = "x86_64"
     else:
-        fail(f"unsupported host arch: {CONFIG.HOSTARCH}")
-        
+        HOSTARCH = CONFIG.HOSTARCH
+
     return remote_file(
         name = name,
         binary =  True,
-        url = f"https://github.com/bufbuild/buf/releases/download/{revision}/buf-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}",
+        url = f"https://github.com/bufbuild/buf/releases/download/{revision}/buf-{HOSTOS}-{HOSTARCH}",
         extract = True,
     )
