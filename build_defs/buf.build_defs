@@ -1,4 +1,36 @@
+def buf_archive(name:str, srcs:list):
+    return genrule(
+        name = name,
+        srcs = srcs,
+        cmd = ["$TOOLS_ARCHTOOL t"],    
+        tools = {
+            "ARCHTOOL": [CONFIG.ARCAT_TOOL],
+        },
+        outs = [
+            f"{name}.tar.gz",
+        ],
+        requires = ['buf_image'],
+    )
+
+
 def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
+    return filegroup(
+        name = name,
+        srcs = srcs,
+        visibility = visibility,
+        deps = deps,
+        provides = {
+            'buf_image': buf_image(
+                name = f'_{name}#buf_image',
+                srcs = srcs,
+                json = json,
+                deps = deps,
+                visibility = visibility,
+            ),
+        }
+    )
+
+def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
     """
     builds the buf image using `buf build` and includes google protos.
     if json is true we generate a .json output instead of a .bin
@@ -7,33 +39,27 @@ def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
     bufYaml = genrule(
         name = f'{name}#buf_build',
         tools = {
-            "buf": "//third_party/buf:buf",
+            "buf": CONFIG.BUF.BUF_TOOL,
         },
         outs = [
             "buf.yaml",
         ],
         cmd = "$TOOLS_BUF mod init",
     )
+    outs = f"{name}_buf_image.{ext}".replace("#", "_")
     return genrule(
         name = name,
         srcs = srcs + [
             bufYaml,
-            "//third_party/go/github.com/tcncloud/protoc-gen-persist:_options",
         ],
         cmd = [
-            "mv third_party/proto/googleapis/google google",
-            "mv third_party/go/github.com/tcncloud/protoc-gen-persist/persist persist",
-            f"$TOOLS_BUF build -o {name}_buf_image.{ext}",
+            f"$TOOLS_BUF build -o {outs}",
         ],
-        deps = [
-            "//third_party/proto:googleapis",
-            "//third_party/go/github.com/tcncloud/protoc-gen-persist",
-        ] + deps,
         tools = {
-            "buf": "//third_party/buf:buf",
+            "buf": CONFIG.BUF.BUF_TOOL,
         },
         outs = [
-            f"{name}_buf_image.{ext}",
+            outs,
         ],
         labels = [
             f"link:plz-out/gen",
@@ -67,4 +93,5 @@ def buf_toolchain(name:str, revision:str, visibility:list):
         binary =  True,
         url = f"https://github.com/bufbuild/buf/releases/download/{revision}/buf-{HOSTOS}-{HOSTARCH}",
         extract = False,
+        visibility = visibility,
     )

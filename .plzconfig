@@ -14,3 +14,4 @@ Name = buf
 [PluginConfig "buf_tool"]
 DefaultValue = buf
 Inherit = true
+
