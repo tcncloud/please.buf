@@ -95,3 +95,71 @@ def buf_toolchain(name:str, revision:str, visibility:list):
         extract = False,
         visibility = visibility,
     )
+
+def buf_dep(name:str, module:str, version:str = "", visibility:list): 
+    """
+    downloads a single buf dependency from BSR.
+
+    ARGS:
+    (name): the name of the rule
+    (module): module name on BSR ex: buf.build/acme/units
+    (version): optional version added to the module to pin the dep to a specific version.
+               ex: if given version = "1c473ad9220a49bca9320f4cc690eba5" we generate: 
+               dep = "buf.build/acme/units:1c473ad9220a49bca9320f4cc690eba5"
+    """
+    dep = f"{module}:{version}" if version else module
+    filename = f"{module}_{version}".replace("/", "_").replace(".", "_") + ".txt"
+    return filegroup(
+        name = name,
+        srcs = [],
+        visibility = visibility,
+        provides = {
+            'buf_dependency': gen_buf_dep(f'_{name}#buf_dep', module, version, visibility),
+        },
+    )
+
+def gen_buf_dep(name:str, module:str, version:str = "", visibility:list): 
+    dep = f"{module}:{version}" if version else module
+    filename = f"{module}_{version}".replace("/", "_").replace(".", "_") + ".txt"
+    return genrule(
+        name = name,
+        visibility = visibility,
+        cmd = [
+            f'echo "  - {dep}\n" > {filename}'
+        ],
+        outs = [filename],
+    ),
+
+
+def buf_yaml(name:str, bsr_deps:list=[], local_deps:list=[], visibility:list):
+    """
+    generates a buf yaml for use in buf_image rules.
+    
+    ARGS:
+    (name): name of the rule
+    (deps): list of buf_dep targets that go in the "deps:" section in the buf.yaml
+    """
+    return filegroup(
+        name = name,
+        provides = {
+            "buf_yaml": gen_buf_yaml(f'_{name}#buf_yaml', bsr_deps, local_deps, visibility),
+        },
+        requires = [
+            'buf_dependency',
+        ],
+    )
+def gen_buf_yaml(name:str, bsr_deps:list=[], local_deps:list=[], visibility:list):
+    return genrule(
+        name = name,
+        visibility = visibility,
+        srcs = bsr_deps,
+        cmd = [
+            # concat all bsr_deps together
+            #put in yaml
+            "$TOOLS_BUF mod update",
+        ],
+        tools = {
+            "buf": CONFIG.BUF.BUF_TOOL,
+        },
+        outs = ["buf.yaml"]
+    )
