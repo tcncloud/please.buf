@@ -130,7 +130,7 @@ def gen_buf_deps(name:str, urls:list, visibility:list):
             f"{name}.lock",
         ],
         tools = {
-            "yq": CONFIG.YQ.YQ_TOOL,
+            "yq": CONFIG.BUF.YQ_TOOL,
         },
     )
 

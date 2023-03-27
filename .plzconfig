@@ -15,9 +15,6 @@ Name = buf
 DefaultValue = buf
 Inherit = true
 
-[PluginDefinition]
-Name = yq
-
 [PluginConfig "yq_tool"]
 DefaultValue = yq
 Inherit = true
