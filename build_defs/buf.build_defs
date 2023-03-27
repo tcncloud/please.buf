@@ -108,29 +108,28 @@ def bsr_deps(name:str, urls:list, visibility:list):
     )
 
 
-def gen_buf_deps(name:str, urls:list, visibility:list):
-    yaml = f"""
-    version: v1
-    name: {name}
-    deps:
-      - $urls
-    """
+def gen_buf_deps(name:str, pkg:str, urls:list, visibility:list):
+    cmd = [f'$TOOLS_YQ -i ".deps = [\\"{u}\\"] + .deps" buf.yaml' for u in urls]
+    
     return genrule(
         name = name,
         visibility = visibility,
-        env = {
-            "yaml": yaml,
-            "urls": ' '.join(urls),
-        },
         cmd = [
-            "echo $yaml | $TOOLS_YQ"
+            f"touch buf.yaml",
+            f'$TOOLS_YQ -i ".version = \\"v1\\"" buf.yaml',
+            f'$TOOLS_YQ -i ".name= \\"{pkg}\\"" buf.yaml',
+        ]+cmd + [
+            "$TOOLS_BUF mod update",
+            f"mv buf.yaml buf.{name}.yaml",
+            f"mv buf.lock buf.{name}.lock",
         ],
         outs = [
-            f"{name}.yaml",
-            f"{name}.lock",
+            f"buf.{name}.yaml",
+            f"buf.{name}.lock",
         ],
         tools = {
             "yq": CONFIG.BUF.YQ_TOOL,
+            "buf": CONFIG.BUF.BUF_TOOL,
         },
     )
 
