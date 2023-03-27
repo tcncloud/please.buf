@@ -96,6 +96,44 @@ def buf_toolchain(name:str, revision:str, visibility:list):
         visibility = visibility,
     )
 
+
+def bsr_deps(name:str, urls:list, visibility:list):
+    return filegroup(
+        name = name, 
+        srcs = [],
+        visibility = visibility,
+        provides = {
+            'buf_dependencies': gen_buf_deps(name=name, urls=urls, visibility=visibility),
+        },
+    )
+
+
+def gen_buf_deps(name:str, urls:list, visibility:list):
+    yaml = f"""
+    version: v1
+    name: {name}
+    deps:
+      - $urls
+    """
+    return genrule(
+        name = name,
+        visibility = visibility,
+        env = {
+            "yaml": yaml,
+            "urls": ' '.join(urls),
+        },
+        cmd = [
+            "echo $yaml | $TOOLS_YQ"
+        ],
+        outs = [
+            f"{name}.yaml",
+            f"{name}.lock",
+        ],
+        tools = {
+            "yq": CONFIG.YQ.YQ_TOOL,
+        },
+    )
+
 def buf_dep(name:str, module:str, version:str = "", visibility:list): 
     """
     downloads a single buf dependency from BSR.
@@ -125,9 +163,9 @@ def gen_buf_dep(name:str, module:str, version:str = "", visibility:list):
         name = name,
         visibility = visibility,
         cmd = [
-            f'echo "  - {dep}\n" > {filename}'
+            f'echo "  - {dep}\n" > _dep_{filename}'
         ],
-        outs = [filename],
+        outs = [f"_dep_{filename}"],
     ),
 
 
@@ -148,6 +186,7 @@ def buf_yaml(name:str, bsr_deps:list=[], local_deps:list=[], visibility:list):
             'buf_dependency',
         ],
     )
+
 def gen_buf_yaml(name:str, bsr_deps:list=[], local_deps:list=[], visibility:list):
     return genrule(
         name = name,

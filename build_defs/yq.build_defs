@@ -1,0 +1,9 @@
+
+def yq_toolchain(name:str, revision:str, visibility:list):
+    return remote_file(
+        name = 'yq',
+        binary = True,
+        url = f"https://github.com/mikefarah/yq/releases/download/{revision}/yq_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}",
+        extract = False,
+        visibility = ["PUBLIC"],
+    )
