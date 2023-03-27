@@ -108,7 +108,7 @@ def bsr_deps(name:str, urls:list, visibility:list):
     )
 
 
-def gen_buf_deps(name:str, pkg:str, urls:list, visibility:list):
+def gen_buf_deps(name:str, urls:list, visibility:list):
     cmd = [f'$TOOLS_YQ -i ".deps = [\\"{u}\\"] + .deps" buf.yaml' for u in urls]
     
     return genrule(
@@ -117,14 +117,35 @@ def gen_buf_deps(name:str, pkg:str, urls:list, visibility:list):
         cmd = [
             f"touch buf.yaml",
             f'$TOOLS_YQ -i ".version = \\"v1\\"" buf.yaml',
-            f'$TOOLS_YQ -i ".name= \\"{pkg}\\"" buf.yaml',
         ]+cmd + [
-            "$TOOLS_BUF mod update",
             f"mv buf.yaml buf.{name}.yaml",
-            f"mv buf.lock buf.{name}.lock",
         ],
         outs = [
             f"buf.{name}.yaml",
+        ],
+        tools = {
+            "yq": CONFIG.BUF.YQ_TOOL,
+            "buf": CONFIG.BUF.BUF_TOOL,
+        },
+    )
+
+def gen_buf_lock(name: str, srcs:list, pkg:str, visibility:list):
+    locs = ' '.join(['buf.yaml'] + [f'$(location {s})' for s in srcs])
+    cmd = [
+        f"touch buf.yaml",
+        "$TOOLS_YQ  ea  -i '. as $item ireduce ({}; . *+ $item )' "+ locs,
+        "$TOOLS_YQ -i '.deps |= unique' buf.yaml",
+        f'$TOOLS_YQ -i ".name= \\"{pkg}\\"" buf.yaml',
+    ]
+    return genrule(
+        name = name,
+        srcs = srcs,
+        visibility = visibility,
+        cmd = cmd + [
+            "$TOOLS_BUF mod update",
+            f"mv buf.lock buf.{name}.lock",
+        ],
+        outs = [
             f"buf.{name}.lock",
         ],
         tools = {
@@ -132,6 +153,8 @@ def gen_buf_deps(name:str, pkg:str, urls:list, visibility:list):
             "buf": CONFIG.BUF.BUF_TOOL,
         },
     )
+
+    
 
 def buf_dep(name:str, module:str, version:str = "", visibility:list): 
     """
