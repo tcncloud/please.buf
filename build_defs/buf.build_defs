@@ -64,14 +64,28 @@ def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
         srcs["yaml"] = yaml
         srcs["lock"] = lock
 
+    include_only = " ".join([f"$(locations {s})" for s in srcs["protos"] ])
+
     outs = f"{name}_buf_image.{ext}".replace("#", "_")
     return genrule(
         name = name,
-        srcs = srcs ,
+        srcs = srcs,
+        env = {
+            "what": include_only,
+        },
         cmd = [
             "mv $SRCS_YAML buf.yaml",
             "mv $SRCS_LOCK buf.lock",
-            f"$TOOLS_BUF build -o {outs}",
+            'PREFIX="--path "',
+            f'ARR="{include_only}"',
+            """
+            for f in ${ARR}
+            do
+                SPLIT="${SPLIT} ${PREFIX}${f}"
+            done""",
+            #f'SPLIT=$(sed -E "s/(\s|^)(\S)/$PREFIX\2/g" <<< "{include_only}")',
+            #f"$SPLIT=sed $'s/ /g' '{include_only}'",
+            f"$TOOLS_BUF build -o {outs} $SPLIT" 
         ],
         tools = {
             "buf": CONFIG.BUF.BUF_TOOL,
