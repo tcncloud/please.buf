@@ -13,7 +13,7 @@ def buf_archive(name:str, srcs:list):
     )
 
 
-def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
+def buf_build(name:str, srcs:list, json=False, deps:list=[], labels:list=[], visibility:list):
     return filegroup(
         name = name,
         srcs = srcs,
@@ -25,12 +25,13 @@ def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
                 srcs = srcs,
                 json = json,
                 deps = deps,
+                labels = labels,
                 visibility = visibility,
             ),
         },
     )
 
-def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
+def buf_image(name:str, srcs:list, json=False, deps:list=[], labels:list=[], visibility:list):
     """
     builds the buf image using `buf build` and includes google protos.
     if json is true we generate a .json output instead of a .bin
@@ -81,11 +82,9 @@ def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
             """
             for f in ${ARR}
             do
-                SPLIT="${SPLIT} ${PREFIX}${f}"
+                SPLIT+=" ${PREFIX}${f}"
             done""",
-            #f'SPLIT=$(sed -E "s/(\s|^)(\S)/$PREFIX\2/g" <<< "{include_only}")',
-            #f"$SPLIT=sed $'s/ /g' '{include_only}'",
-            f"$TOOLS_BUF build -o {outs} $SPLIT" 
+            f'$TOOLS_BUF build -o {outs} $SPLIT'
         ],
         tools = {
             "buf": CONFIG.BUF.BUF_TOOL,
@@ -93,10 +92,7 @@ def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
         outs = [
             outs,
         ],
-        labels = [
-            f"link:plz-out/gen",
-            f"link:.",
-        ],
+        labels = labels,
         visibility = visibility,
     )
 
