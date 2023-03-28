@@ -27,7 +27,7 @@ def buf_build(name:str, srcs:list, json=False, deps:list=[], visibility:list):
                 deps = deps,
                 visibility = visibility,
             ),
-        }
+        },
     )
 
 def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
@@ -46,13 +46,31 @@ def buf_image(name:str, srcs:list, json=False, deps:list=[], visibility:list):
         ],
         cmd = "$TOOLS_BUF mod init",
     )
+    srcs = {
+        "protos": srcs,
+    }
+    if len(deps) > 0:
+        yaml = gen_buf_deps(
+            name = tag(name, "deps"),
+            urls = deps,
+            visibility = visibility,
+        )
+        lock = gen_buf_lock(
+            name = tag(name, "lock"),
+            srcs = [ yaml ],
+            pkg = f"buf.build/{name}/deps",
+            visibility = visibility,
+        )
+        srcs["yaml"] = yaml
+        srcs["lock"] = lock
+
     outs = f"{name}_buf_image.{ext}".replace("#", "_")
     return genrule(
         name = name,
-        srcs = srcs + [
-            bufYaml,
-        ],
+        srcs = srcs ,
         cmd = [
+            "mv $SRCS_YAML buf.yaml",
+            "mv $SRCS_LOCK buf.lock",
             f"$TOOLS_BUF build -o {outs}",
         ],
         tools = {
